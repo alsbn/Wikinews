@@ -1,0 +1,97 @@
+
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Wikinews Search</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+
+<header>
+    <h1>Wikinews Search</h1>
+    <p>Motore di ricerca delle notizie italiane</p>
+</header>
+
+<main>
+    <form id="search-form">
+        <input
+            type="search"
+            id="query"
+            placeholder="Cerca una notizia..."
+            required
+        >
+        <button type="submit">Cerca</button>
+    </form>
+
+    <p id="status"></p>
+    <section id="results"></section>
+</main>
+
+<script>
+const form = document.getElementById("search-form");
+const results = document.getElementById("results");
+const status = document.getElementById("status");
+
+form.addEventListener("submit", async function(event) {
+    event.preventDefault();
+
+    const query = document.getElementById("query").value.trim();
+
+    if (!query) return;
+
+    status.textContent = "Ricerca in corso...";
+    results.replaceChildren();
+
+    try {
+        const response = await fetch(
+            "/api/search?q=" + encodeURIComponent(query)
+        );
+
+        if (!response.ok) {
+            throw new Error("Errore nella ricerca");
+        }
+
+        const data = await response.json();
+
+        status.textContent =
+            data.total + " risultati trovati";
+
+        data.results.forEach(article => {
+            const item = document.createElement("article");
+
+            const title = document.createElement("h2");
+            const link = document.createElement("a");
+
+            link.href = article.url;
+            link.textContent = article.title;
+            link.target = "_blank";
+            link.rel = "noopener noreferrer";
+
+            title.appendChild(link);
+
+            const excerpt = document.createElement("p");
+            excerpt.textContent = article.excerpt || article.abstract;
+
+            const date = document.createElement("small");
+            date.textContent =
+                "Ultima modifica: " + article.date_modified;
+
+            item.append(title, excerpt, date);
+            results.appendChild(item);
+        });
+
+        if (data.results.length === 0) {
+            status.textContent = "Nessun risultato trovato.";
+        }
+
+    } catch (error) {
+        status.textContent = error.message;
+    }
+});
+</script>
+
+</body>
+</html>
